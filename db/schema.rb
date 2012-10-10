@@ -11,7 +11,24 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20121009074654) do
+ActiveRecord::Schema.define(:version => 20121010012100) do
+
+  create_table "cdn_fcs", :force => true do |t|
+    t.string   "mode"
+    t.datetime "happened_at"
+    t.string   "path"
+    t.integer  "http_status"
+    t.string   "ip_address"
+    t.datetime "created_at",  :null => false
+    t.datetime "updated_at",  :null => false
+  end
+
+  add_index "cdn_fcs", ["happened_at", "ip_address", "path", "http_status"], :name => "by_most"
+  add_index "cdn_fcs", ["happened_at"], :name => "index_cdn_fcs_on_happened_at"
+  add_index "cdn_fcs", ["http_status"], :name => "index_cdn_fcs_on_http_status"
+  add_index "cdn_fcs", ["ip_address"], :name => "index_cdn_fcs_on_ip_address"
+  add_index "cdn_fcs", ["mode"], :name => "index_cdn_fcs_on_mode"
+  add_index "cdn_fcs", ["path"], :name => "index_cdn_fcs_on_path"
 
   create_table "cdn_https", :force => true do |t|
     t.string   "ip_address"
@@ -29,5 +46,7 @@ ActiveRecord::Schema.define(:version => 20121009074654) do
   end
 
   add_index "cdn_https", ["happened_at", "ip_address", "full_path", "status"], :name => "by_at_ip_fpath_status"
+  add_index "cdn_https", ["happened_at"], :name => "index_cdn_https_on_happened_at"
+  add_index "cdn_https", ["ip_address"], :name => "index_cdn_https_on_ip_address"
 
 end

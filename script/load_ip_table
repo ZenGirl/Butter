@@ -1,0 +1,38 @@
+#!/usr/bin/env ruby
+
+require 'csv'
+require 'date'
+require 'active_record'
+
+cwd = Dir.pwd
+if File.basename(cwd) == 'Butter'
+  require './app/models/ip_table.rb'
+  ActiveRecord::Base.establish_connection(
+      :adapter    => 'mysql2',
+      :encoding   => 'utf8',
+      :host       => 'localhost',
+      :database   => 'butter_development',
+      :username   => 'butter',
+      :password   => 'butter'
+  )
+else
+  p "Must be run in rails root folder"
+end
+
+ip_file_name = File.expand_path('../Butter_data/IpToCountry.csv')
+CSV.foreach(ip_file_name) do |row|
+  p row
+  item0 = row[0]
+  next if item0 =~ /^#/
+  o = IpTable.new
+  o.from_ip       = row[0].to_
+  o.to_ip         = row[1].to_i
+  o.registry      = row[2]
+  o.assigned      = row[3].to_i
+  o.country       = row[4]
+  o.country3      = row[5]
+  o.country_name  = row[6]
+  p o
+  existing_row = IpTable.where(:from_ip => row[0].to_i, :to_ip => row[1].to_i).count
+  o.save if existing_row == 0
+end

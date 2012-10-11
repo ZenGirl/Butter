@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20121010012100) do
+ActiveRecord::Schema.define(:version => 20121010122546) do
 
   create_table "cdn_fcs", :force => true do |t|
     t.string   "mode"
@@ -48,5 +48,50 @@ ActiveRecord::Schema.define(:version => 20121010012100) do
   add_index "cdn_https", ["happened_at", "ip_address", "full_path", "status"], :name => "by_at_ip_fpath_status"
   add_index "cdn_https", ["happened_at"], :name => "index_cdn_https_on_happened_at"
   add_index "cdn_https", ["ip_address"], :name => "index_cdn_https_on_ip_address"
+
+  create_table "ip_tables", :force => true do |t|
+    t.integer  "from_ip",      :limit => 8
+    t.integer  "to_ip",        :limit => 8
+    t.string   "registry"
+    t.integer  "assigned"
+    t.string   "country"
+    t.string   "country3"
+    t.string   "country_name"
+    t.datetime "created_at",                :null => false
+    t.datetime "updated_at",                :null => false
+  end
+
+  add_index "ip_tables", ["country"], :name => "index_ip_tables_on_country"
+  add_index "ip_tables", ["from_ip"], :name => "index_ip_tables_on_from"
+  add_index "ip_tables", ["to_ip"], :name => "index_ip_tables_on_to"
+
+  create_table "media_events", :force => true do |t|
+    t.string   "event"
+    t.string   "source"
+    t.string   "media_id"
+    t.string   "label"
+    t.string   "label_id"
+    t.integer  "user_id"
+    t.string   "country"
+    t.string   "upc"
+    t.string   "isrc"
+    t.datetime "happened_at"
+    t.string   "album"
+    t.string   "artist"
+    t.string   "title"
+    t.string   "duration"
+    t.boolean  "is_sme"
+    t.boolean  "is_royalty_bearing"
+    t.datetime "created_at",         :null => false
+    t.datetime "updated_at",         :null => false
+  end
+
+  add_index "media_events", ["country"], :name => "index_media_events_on_country"
+  add_index "media_events", ["event"], :name => "index_media_events_on_event"
+  add_index "media_events", ["happened_at"], :name => "index_media_events_on_happened_at"
+  add_index "media_events", ["label"], :name => "index_media_events_on_label"
+  add_index "media_events", ["media_id"], :name => "index_media_events_on_media_id"
+  add_index "media_events", ["source"], :name => "index_media_events_on_source"
+  add_index "media_events", ["upc"], :name => "index_media_events_on_upc"
 
 end

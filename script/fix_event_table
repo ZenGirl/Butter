@@ -1,0 +1,70 @@
+#!/usr/bin/env ruby
+
+require 'csv'
+require 'date'
+require 'active_record'
+
+cwd = Dir.pwd
+if File.basename(cwd) == 'Butter'
+  require './app/models/cdn_fcs.rb'
+  require './app/models/cdn_http.rb'
+  require './app/models/media_event.rb'
+  require './app/models/media.rb'
+  require './app/models/ip_table.rb'
+  ActiveRecord::Base.establish_connection(
+      :adapter    => 'mysql2',
+      :encoding   => 'utf8',
+      :host       => 'localhost',
+      :database   => 'butter_development',
+      :username   => 'butter',
+      :password   => 'butter'
+  )
+else
+  p "Must be run in rails root folder"
+end
+
+CdnHttp.where("left(path,35) = 'http://guvera.dl.llnw.net/s/content' ").each do |row|
+  p row
+  path_parts = row.path.split('/')
+  file_name_parts = path_parts[9].split('_')
+  disc = file_name_parts[0].to_i
+  track = file_name_parts[1].to_i
+  media = Media.where("digital_upc = '#{path_parts[8]}' and volume_num = #{disc} and trackId = #{track}").first
+  p media
+  event = MediaEvent.where(
+      :event        => 'Download',
+      :source       => 'Web',
+      :happened_at  => row.happened_at,
+      :media_id     => media['id']
+  ).first
+  if ! event.nil?
+    p event
+    event.disc  = disc
+    event.track = track
+    event.save
+    print "\n"
+  end
+end
+
+CdnFcs.where("mode = 'play' and http_status = 200 and left(path,9) = 's/content'").each do |row|
+  p row
+  path_parts = row.path.split('/')
+  file_name_parts = path_parts[6].split('_')
+  disc = file_name_parts[0].to_i
+  track = file_name_parts[1].to_i
+  media = Media.where("digital_upc = '#{path_parts[5]}' and volume_num = #{disc} and trackId = #{track}").first
+  p media
+  event = MediaEvent.where(
+      :event        => 'Stream',
+      :source       => 'Web',
+      :happened_at  => row.happened_at,
+      :media_id     => media['id']
+  ).first
+  if ! event.nil?
+    p event
+    event.disc  = disc
+    event.track = track
+    event.save
+    print "\n"
+  end
+end

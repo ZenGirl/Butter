@@ -2,8 +2,13 @@ source 'https://rubygems.org'
 
 gem 'rails',          '3.2.8'
 
-gem 'mysql2',         '0.3.11'
-
+platforms :ruby do
+  gem 'mysql2',         '0.3.11'
+end
+# If running on JRuby, use the activerecord-jdbc-adapter
+platforms :jruby do
+  gem 'activerecord-jdbc-adapter', :require => false
+end
 
 group :assets do
   gem 'sass-rails',   '3.2.5'

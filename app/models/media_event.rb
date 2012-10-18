@@ -7,5 +7,5 @@ class MediaEvent < ActiveRecord::Base
   # country:  AU/US
   # label:    char3
   # label_id: specific to label
-  attr_accessible :event, :source, :media_id, :label, :label_id, :user_id, :country, :upc, :isrc, :happened_at, :album, :artist, :title, :duration, :is_sme, :is_royalty_bearing
+  attr_accessible :event, :source, :media_id, :disc, :track, :label, :label_id, :user_id, :country, :upc, :isrc, :happened_at, :album, :artist, :title, :duration, :is_sme, :is_royalty_bearing
 end

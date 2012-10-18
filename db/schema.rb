@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20121010122546) do
+ActiveRecord::Schema.define(:version => 20121015060111) do
 
   create_table "cdn_fcs", :force => true do |t|
     t.string   "mode"
@@ -65,13 +65,56 @@ ActiveRecord::Schema.define(:version => 20121010122546) do
   add_index "ip_tables", ["from_ip"], :name => "index_ip_tables_on_from"
   add_index "ip_tables", ["to_ip"], :name => "index_ip_tables_on_to"
 
+  create_table "media", :primary_key => "pkId", :force => true do |t|
+    t.string    "id",                    :limit => 64,                                    :null => false
+    t.text      "contextSignature"
+    t.string    "name"
+    t.string    "description"
+    t.string    "descriptionLong"
+    t.string    "descriptionPerformers"
+    t.string    "descriptionComposers"
+    t.string    "descriptionAlbum"
+    t.string    "locationSample"
+    t.string    "locationThumbnail"
+    t.datetime  "addedDate",                           :default => '1970-01-01 00:00:00'
+    t.datetime  "publishedDate",                       :default => '1970-01-01 00:00:00'
+    t.integer   "timesDownloaded",       :limit => 8,  :default => 0
+    t.time      "duration"
+    t.boolean   "active",                              :default => false
+    t.string    "isrc",                  :limit => 15
+    t.string    "digital_upc",           :limit => 15
+    t.string    "physical_upc",          :limit => 15
+    t.text      "c_notice"
+    t.integer   "trackId"
+    t.datetime  "startDate",                           :default => '2170-01-01 00:00:00'
+    t.datetime  "stopDate",                            :default => '1970-01-01 00:00:00'
+    t.boolean   "explicit",                            :default => false
+    t.string    "genre"
+    t.integer   "volume_num"
+    t.timestamp "modifiedDate"
+  end
+
+  add_index "media", ["active"], :name => "media_indx_active"
+  add_index "media", ["addedDate"], :name => "by_added_date"
+  add_index "media", ["descriptionAlbum"], :name => "by_album"
+  add_index "media", ["digital_upc", "trackId"], :name => "upc_track"
+  add_index "media", ["digital_upc"], :name => "by_digital_upc"
+  add_index "media", ["genre"], :name => "by_genre"
+  add_index "media", ["id"], :name => "id", :unique => true
+  add_index "media", ["isrc"], :name => "by_isrc"
+  add_index "media", ["modifiedDate"], :name => "media_indx_ModifiedDate"
+  add_index "media", ["name"], :name => "by_name"
+  add_index "media", ["physical_upc"], :name => "by_phys_upc"
+  add_index "media", ["startDate"], :name => "media_indx_startDate"
+  add_index "media", ["stopDate"], :name => "media_indx_stopDate"
+
   create_table "media_events", :force => true do |t|
     t.string   "event"
     t.string   "source"
     t.string   "media_id"
     t.string   "label"
     t.string   "label_id"
-    t.integer  "user_id"
+    t.integer  "user_id",            :limit => 8
     t.string   "country"
     t.string   "upc"
     t.string   "isrc"
@@ -82,16 +125,20 @@ ActiveRecord::Schema.define(:version => 20121010122546) do
     t.string   "duration"
     t.boolean  "is_sme"
     t.boolean  "is_royalty_bearing"
-    t.datetime "created_at",         :null => false
-    t.datetime "updated_at",         :null => false
+    t.datetime "created_at",                      :null => false
+    t.datetime "updated_at",                      :null => false
+    t.integer  "disc"
+    t.integer  "track"
   end
 
   add_index "media_events", ["country"], :name => "index_media_events_on_country"
+  add_index "media_events", ["disc"], :name => "index_media_events_on_disc"
   add_index "media_events", ["event"], :name => "index_media_events_on_event"
   add_index "media_events", ["happened_at"], :name => "index_media_events_on_happened_at"
   add_index "media_events", ["label"], :name => "index_media_events_on_label"
   add_index "media_events", ["media_id"], :name => "index_media_events_on_media_id"
   add_index "media_events", ["source"], :name => "index_media_events_on_source"
+  add_index "media_events", ["track"], :name => "index_media_events_on_track"
   add_index "media_events", ["upc"], :name => "index_media_events_on_upc"
 
 end

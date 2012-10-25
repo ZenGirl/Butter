@@ -24,91 +24,108 @@ else
 end
 
 # Read all http records and treat them as web downloads
-if false
-CdnHttp.where("left(path,35) = 'http://guvera.dl.llnw.net/s/content' ").each do |row|
-  p row
-  # Pick apart the path:
-  # http://guvera.dl.llnw.net/s/content/EMI/Audio/452/0724382919452/01_010_London_Loves(Blur)_256.mp3?e=1348542890&h=28c09935882f38dd0be1fd7e21e048f4
-  path_parts = row.path.split('/')
-  event = MediaEvent.new
-  event.event               = 'Download'
-  event.source              = 'Web'
-  event.label               = path_parts[5]
-  event.label_id            = ''
-  ip_address_octets = row.ip_address.split('.')
-  ip_value = (ip_address_octets[3].to_i) + (ip_address_octets[2].to_i * 256) + (ip_address_octets[1].to_i * 256 * 256) + (ip_address_octets[0].to_i * 256 * 256 * 256)
-  country = 'ZZ'
-  event.user_id             = ip_value
-  ip_row = IpTable.where("from_ip <= #{ip_value} and to_ip >= #{ip_value}").first
-  country = ip_row.country
-  event.country             = country
-  event.upc                 = path_parts[8]
-  file_name_parts = path_parts[9].split('_')
-  disc = file_name_parts[0].to_i
-  track = file_name_parts[1].to_i
-  media = Media.where("digital_upc = '#{path_parts[8]}' and volume_num = #{disc} and trackId = #{track}").first
-  p media
-  event.media_id            = media['id']
-  event.isrc                = media.isrc
-  event.happened_at         = row.happened_at
-  event.album               = media.descriptionAlbum
-  event.artist              = media.descriptionPerformers
-  event.title               = media.name
-  event.duration            = media.duration
-  event.is_sme              = false
-  event.is_royalty_bearing  = false
-  p event
-  existing_row = MediaEvent.where(
-      :event        => event.event,
-      :source       => event.source,
-      :happened_at  => event.happened_at,
-      :media_id     => event.media_id
-  ).count
-  event.save if existing_row == 0
-  print "\n"
-end
+if true
+  missing = 0
+  CdnHttp.where("left(path,35) = 'http://guvera.dl.llnw.net/s/content' ").each do |row|
+    #p row
+    # Pick apart the path:
+    # http://guvera.dl.llnw.net/s/content/EMI/Audio/452/0724382919452/01_010_London_Loves(Blur)_256.mp3?e=1348542890&h=28c09935882f38dd0be1fd7e21e048f4
+    path_parts = row.path.split('/')
+    event = MediaEvent.new
+    event.event               = 'Download'
+    event.source              = 'Web'
+    event.label               = path_parts[5]
+    event.label_id            = ''
+    ip_address_octets = row.ip_address.split('.')
+    ip_value = (ip_address_octets[3].to_i) + (ip_address_octets[2].to_i * 256) + (ip_address_octets[1].to_i * 256 * 256) + (ip_address_octets[0].to_i * 256 * 256 * 256)
+    country = 'ZZ'
+    event.user_id             = ip_value
+    ip_row = IpTable.where("from_ip <= #{ip_value} and to_ip >= #{ip_value}").first
+    country = ip_row.country
+    event.country             = country
+    event.upc                 = path_parts[8]
+    file_name_parts = path_parts[9].split('_')
+    disc = file_name_parts[0].to_i
+    track = file_name_parts[1].to_i
+    media = Media.where("digital_upc = '#{path_parts[8]}' and volume_num = #{disc} and trackId = #{track}").first
+    if media.nil?
+      printf "Missing media for #{event.upc} #{disc} #{track}"
+      missing += 1
+      next
+    end
+    #p media
+    event.media_id            = media['id']
+    event.isrc                = media.isrc
+    event.happened_at         = row.happened_at
+    event.album               = media.descriptionAlbum
+    event.artist              = media.descriptionPerformers
+    event.title               = media.name
+    event.duration            = media.duration
+    event.is_sme              = false
+    event.is_royalty_bearing  = false
+    event.disc                = disc
+    event.track               = track
+    printf("%s %s %s %s\n", event.event, event.source, event.happened_at, event.media_id)
+    existing_row = MediaEvent.where(
+        :event        => event.event,
+        :source       => event.source,
+        :happened_at  => event.happened_at,
+        :media_id     => event.media_id
+    ).count
+    event.save if existing_row == 0
+  end
+  printf "Total missing media rows: #{missing}\n"
 end
 
 # Read all fcs records and treat them as web streams
-CdnFcs.where("mode = 'play' and http_status = 200 and left(path,9) = 's/content'").each do |row|
-  p row
-  # Pick apart the path:
-  path_parts = row.path.split('/')
-  event = MediaEvent.new
-  event.event               = 'Stream'
-  event.source              = 'Web'
-  event.label               = path_parts[2]
-  event.label_id            = ''
-  ip_address_octets = row.ip_address.split('.')
-  ip_value = (ip_address_octets[3].to_i) + (ip_address_octets[2].to_i * 256) + (ip_address_octets[1].to_i * 256 * 256) + (ip_address_octets[0].to_i * 256 * 256 * 256)
-  country = 'ZZ'
-  event.user_id             = ip_value
-  ip_row = IpTable.where("from_ip <= #{ip_value} and to_ip >= #{ip_value}").first
-  country = ip_row.country
-  event.country             = country
-  event.upc                 = path_parts[5]
-  file_name_parts = path_parts[6].split('_')
-  disc = file_name_parts[0].to_i
-  track = file_name_parts[1].to_i
-  media = Media.where("digital_upc = '#{event.upc}' and volume_num = #{disc} and trackId = #{track}").first
-  p media
-  event.media_id            = media['id']
-  event.isrc                = media.isrc
-  event.happened_at         = row.happened_at
-  event.album               = media.descriptionAlbum
-  event.artist              = media.descriptionPerformers
-  event.title               = media.name
-  event.duration            = media.duration
-  event.is_sme              = false
-  event.is_royalty_bearing  = false
-  p event
-  existing_row = MediaEvent.where(
-      :event        => event.event,
-      :source       => event.source,
-      :happened_at  => event.happened_at,
-      :media_id     => event.media_id
-  ).count
-  event.save if existing_row == 0
-  print "\n"
-
+if false
+  missing = 0
+  CdnFcs.where("mode = 'play' and http_status = 200 and left(path,9) = 's/content'").each do |row|
+    #p row
+    # Pick apart the path:
+    path_parts = row.path.split('/')
+    event = MediaEvent.new
+    event.event               = 'Stream'
+    event.source              = 'Web'
+    event.label               = path_parts[2]
+    event.label_id            = ''
+    ip_address_octets = row.ip_address.split('.')
+    ip_value = (ip_address_octets[3].to_i) + (ip_address_octets[2].to_i * 256) + (ip_address_octets[1].to_i * 256 * 256) + (ip_address_octets[0].to_i * 256 * 256 * 256)
+    country = 'ZZ'
+    event.user_id             = ip_value
+    ip_row = IpTable.where("from_ip <= #{ip_value} and to_ip >= #{ip_value}").first
+    country = ip_row.country
+    event.country             = country
+    event.upc                 = path_parts[5]
+    file_name_parts = path_parts[6].split('_')
+    disc = file_name_parts[0].to_i
+    track = file_name_parts[1].to_i
+    media = Media.where("digital_upc = '#{event.upc}' and volume_num = #{disc} and trackId = #{track}").first
+    if media.nil?
+      printf "Missing media for #{event.upc} #{disc} #{track}"
+      missing += 1
+      next
+    end
+    #p media
+    event.media_id            = media['id']
+    event.isrc                = media.isrc
+    event.happened_at         = row.happened_at
+    event.album               = media.descriptionAlbum
+    event.artist              = media.descriptionPerformers
+    event.title               = media.name
+    event.duration            = media.duration
+    event.is_sme              = false
+    event.is_royalty_bearing  = false
+    event.disc                = disc
+    event.track               = track
+    printf("%s %s %s %s\n", event.event, event.source, event.happened_at, event.media_id)
+    existing_row = MediaEvent.where(
+        :event        => event.event,
+        :source       => event.source,
+        :happened_at  => event.happened_at,
+        :media_id     => event.media_id
+    ).count
+    event.save if existing_row == 0
+  end
+  printf "Total missing media rows: #{missing}\n"
 end

@@ -2,7 +2,7 @@ require 'date'
 require 'active_record'
 
 class CdnFcs < ActiveRecord::Base
-  attr_accessible :mode, :happened_at, :path, :http_status, :ip_address
+  attr_accessible :mode, :happened_at, :path, :http_status, :ip_address, :md5_id
   # 1 pause/play/seek/stop/unpause
   #	2 stream
   #	3 2012-10-04

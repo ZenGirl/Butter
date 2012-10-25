@@ -1,0 +1,99 @@
+#!/usr/bin/env ruby
+
+require 'csv'
+require 'date'
+require 'active_record'
+
+cwd = Dir.pwd
+if File.basename(cwd) == 'Butter'
+  require './app/models/media_event.rb'
+  require './app/models/media.rb'
+  ActiveRecord::Base.establish_connection(
+      :adapter => 'mysql2',
+      :encoding => 'utf8',
+      :host => 'localhost',
+      :database => 'butter_development',
+      :username => 'butter',
+      :password => 'butter'
+  )
+else
+  p "Must be run in rails root folder"
+end
+
+if true
+  # Fix the disc and track numbers on the UMI AU Streams
+  c = 0
+  MediaEvent.where('label = "UMI" and country = "AU" and event="Stream"').each do |row|
+    if row.disc.nil?
+      media = Media.where("`id` = '#{row.media_id}'").first
+      if media.nil?
+        row.disc = 0
+        row.track = 0
+      else
+        row.disc = media.volume_num
+        row.track = media.trackId
+      end
+    end
+    p "#{c} #{row.id} #{row.happened_at} #{row.media_id} #{row.disc} #{row.track}"
+    c += 1
+    row.save
+  end
+  p "#{c} rows fixed"
+end
+
+if false
+  # Find 47,362 random UMI Streams and change label to ZZZ
+  all_ids = []
+  MediaEvent.where('label = "UMI" and country = "AU" and event="Stream"').each do |row|
+    all_ids << row.id
+  end
+  rand_ids = all_ids.sort_by { rand }
+  #p rand_ids
+  #p rand_ids.size
+  # Pick first 47,362
+  first_ones = rand_ids[1..47_362]
+  p first_ones
+  p first_ones.size
+  first_ones.each do |rand_id|
+    # Change label to ZZZ
+    row = MediaEvent.find(rand_id)
+    row.label = "ZZZ"
+    p row
+    row.save
+  end
+end
+
+
+if false
+  # Find 5,526 random UMI tracks.
+  all_ids = []
+  MediaEvent.where('label = "UMI" and country = "AU"').each do |row|
+    #p row.id
+    all_ids << row.id
+  end
+  rand_ids = all_ids.sort_by { rand }
+  #p rand_ids
+  #p all_ids.size
+  # Pick first 5,526
+  first_ones = rand_ids[1..5_526]
+  p first_ones
+  p first_ones.size
+  first_ones.each do |rand_id|
+    p rand_id
+    row = MediaEvent.find(rand_id)
+    row.event = "Download"
+    if row.disc.nil?
+      media = Media.where("`id` = '#{row.media_id}'").first
+      if media.nil?
+        row.disc = 0
+        row.track = 0
+      else
+        p media
+        row.disc = media.volume_num
+        row.track = media.trackId
+      end
+    end
+    p row
+    row.save
+  end
+end

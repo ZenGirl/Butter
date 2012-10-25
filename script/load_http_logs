@@ -3,6 +3,7 @@
 require 'csv'
 require 'date'
 require 'active_record'
+require 'digest/md5'
 
 cwd = Dir.pwd
 if File.basename(cwd) == 'Butter'
@@ -31,12 +32,12 @@ end
 # "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)"
 
 
-http_path = File.expand_path('../Butter_data/http')
+http_path = File.expand_path('../Butter_data/cdn/guvera-live.logs.llnw.net/http-rerun')
 Dir.entries(http_path).each do |file_name|
   full_path = "#{http_path}/#{file_name}"
   next unless File.file?(full_path)
   CSV.foreach(full_path, :col_sep => ' ') do |row|
-    p row
+    #p row
     cdn_http = CdnHttp.new
     cdn_http.ip_address   = row[0]
     cdn_http.happened_at  = DateTime.strptime("#{row[3]} #{row[4]}", "[%d/%b/%Y:%H:%M:%S %Z]")
@@ -49,16 +50,14 @@ Dir.entries(http_path).each do |file_name|
     cdn_http.verb         = parts[0]
     cdn_http.path         = parts[1]
     cdn_http.http_version = parts[2]
-    existing_row = CdnHttp.where(
-        :happened_at  => cdn_http.happened_at,
-        :ip_address   => row[0],
-        :full_path    => row[5],
-        :status       => row[6]
-    ).count
-    p cdn_http
-    if existing_row == 0
-      cdn_http.save
-    end
+
+    md5_value          = "#{cdn_http.happened_at} #{cdn_http.ip_address} #{cdn_http.status} #{cdn_http.path}"
+    md5_id             = Digest::MD5.hexdigest(md5_value)
+    cdn_http.md5_id    = md5_id
+    printf("%s %s\n", cdn_http.md5_id, md5_value)
+    existing_row = CdnHttp.where(:md5_id => md5_id).count
+
+    cdn_http.save if existing_row == 0
   end
 end
 

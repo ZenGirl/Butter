@@ -3,6 +3,7 @@
 require 'csv'
 require 'date'
 require 'active_record'
+require 'digest/md5'
 
 cwd = Dir.pwd
 if File.basename(cwd) == 'Butter'
@@ -19,16 +20,15 @@ else
   p "Must be run in rails root folder"
 end
 
-fcs_path = File.expand_path('../Butter_data/fcs')
-["#{fcs_path}/201209.log", "#{fcs_path}/201210.log"].each do |full_path|
+fcs_path = File.expand_path('../Butter_data/cdn/guvera-live.logs.llnw.net/fcs-rerun')
+Dir.entries(fcs_path).each do |file_name|
+  full_path = "#{fcs_path}/#{file_name}"
   next unless File.file?(full_path)
   CSV.foreach(full_path, :col_sep => "\t") do |row|
     next if row[5] =~ /^test_unsec/
-    #p row
     cdn_fcs = CdnFcs.new
     cdn_fcs.mode        = row[0]
     happened_at         = "#{row[2]} #{row[3]} #{row[4]}"
-    #p happened_at
     cdn_fcs.happened_at = DateTime.parse(happened_at)
     #cdn_fcs.happened_at = DateTime.strptime("#{row[3]} #{row[4]} #{row[5]}", "%Y-%m-%d %H:%M:%S %Z")
     cdn_fcs.path        = row[5]
@@ -36,15 +36,12 @@ fcs_path = File.expand_path('../Butter_data/fcs')
     status              = 0 if status == '-'
     cdn_fcs.http_status = status
     cdn_fcs.ip_address  = row[16]
-    existing_row = CdnFcs.where(
-        :happened_at  => cdn_fcs.happened_at,
-        :ip_address   => row[16],
-        :path         => row[5],
-        :http_status  => status
-    ).count
-    p cdn_fcs
-    if existing_row == 0
-      cdn_fcs.save
-    end
+    md5_value          = "#{cdn_fcs.happened_at} #{cdn_fcs.mode} #{cdn_fcs.ip_address} #{status} #{cdn_fcs.path}"
+    md5_id             = Digest::MD5.hexdigest(md5_value)
+    cdn_fcs.md5_id     = md5_id
+    printf("%s %s\n", cdn_fcs.md5_id, md5_value)
+    existing_row = CdnFcs.where(:md5_id => md5_id).count
+    #p cdn_fcs
+    cdn_fcs.save if existing_row == 0
   end
 end
